@@ -48,6 +48,14 @@ export async function onRequestPostCompleteMultipart(context) {
 }
 
 export async function onRequestPost(context) {
+  if (!get_auth_status(context)) {
+    var header = new Headers();
+    header.set("WWW-Authenticate", 'Basic realm="需要登录"');
+    return new Response("没有操作权限", {
+      status: 401,
+      headers: header,
+    });
+  }
   const url = new URL(context.request.url);
   const searchParams = new URLSearchParams(url.search);
 
