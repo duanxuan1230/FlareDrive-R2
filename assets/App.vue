@@ -635,20 +635,23 @@ export default {
   display: flex;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 600px) {
+  .app-title {
+    display: none;
+  }
+
+  .app-title-container {
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
   .menu-button {
-    margin: 0;
+    margin-left: 8px;
     padding: 0;
   }
 
   button.circle {
-    padding: 0 8px;
-  }
-}
-
-@media (max-width: 340px) {
-  .app-title-container {
-    display: none !important;
+    padding: 0 10px;
   }
 }
 
