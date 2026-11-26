@@ -644,9 +644,6 @@ export default {
   button.circle {
     padding: 0 8px;
   }
-  .menu-button-text {
-    display: none !important;
-  }
 }
 
 @media (max-width: 340px) {
