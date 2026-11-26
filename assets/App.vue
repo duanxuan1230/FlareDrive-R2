@@ -57,7 +57,7 @@
           </div>
         </li>
         <li v-for="folder in filteredFolders" :key="folder">
-          <div tabindex="0" class="file-item" @click="cwd = folder" @contextmenu.prevent="
+          <div tabindex="0" class="file-item" @click="search = ''; cwd = folder" @contextmenu.prevent="
             showContextMenu = true;
           focusedItem = folder;
           ">
@@ -67,7 +67,7 @@
                 <path d="M384 480l48 0c11.4 0 21.9-6 27.6-15.9l112-192c5.8-9.9 5.8-22.1 .1-32.1S555.5 224 544 224l-400 0c-11.4 0-21.9 6-27.6 15.9L48 357.1 48 96c0-8.8 7.2-16 16-16l117.5 0c4.2 0 8.3 1.7 11.3 4.7l26.5 26.5c21 21 49.5 32.8 79.2 32.8L416 144c8.8 0 16 7.2 16 16l0 32 48 0 0-32c0-35.3-28.7-64-64-64L298.5 96c-17 0-33.3-6.7-45.3-18.7L226.7 50.7c-12-12-28.3-18.7-45.3-18.7L64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l23.7 0L384 480z"/>
               </svg>
             </div>
-            <div class="file-info-container"><span class="file-name" v-text="folder.match(/.*?([^/]*)\/?$/)[1]"></span>
+            <div class="file-info-container"><span class="file-name" v-text="search.trim() ? folder.replace(/\/$/, '') : folder.match(/.*?([^/]*)\/?$/)[1]"></span>
             </div>
             <div style="margin-right: 10px;margin-left: auto;" @click.stop="
               showContextMenu = true;
@@ -91,7 +91,7 @@
               : null
               " />
             <div class="file-info-container">
-              <div class="file-name" v-text="file.key.split('/').pop()"></div>
+              <div class="file-name" v-text="search.trim() ? file.key : file.key.split('/').pop()"></div>
               <div class="file-attr">
                 <span v-text="new Date(file.uploaded).toLocaleString()"></span>
                 <span v-text="formatSize(file.size)"></span>
@@ -202,6 +202,8 @@ export default {
     loading: false,
     order: null,
     search: "",
+    searchResults: null,
+    searchTimer: null,
     showContextMenu: false,
     showMenu: false,
     showUploadPopup: false,
@@ -216,21 +218,17 @@ export default {
     },
 
     filteredFiles() {
-      let files = this.files;
-      if (this.search) {
-        files = files.filter((file) =>
-          file.key.split("/").pop().includes(this.search)
-        );
+      if (this.search.trim()) {
+        return this.searchResults ? this.searchResults.value : [];
       }
-      return files;
+      return this.files;
     },
 
     filteredFolders() {
-      let folders = this.folders;
-      if (this.search) {
-        folders = folders.filter((folder) => folder.includes(this.search));
+      if (this.search.trim()) {
+        return this.searchResults ? this.searchResults.folders : [];
       }
-      return folders;
+      return this.folders;
     },
   },
 
@@ -580,6 +578,31 @@ export default {
   },
 
   watch: {
+    search(val) {
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      const q = (val || "").trim();
+      if (!q) {
+        this.searchResults = null;
+        this.loading = false;
+        return;
+      }
+      this.loading = true;
+      this.searchTimer = setTimeout(() => {
+        fetch(`/api/search?q=${encodeURIComponent(q)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (this.search.trim() !== q) return;
+            this.searchResults = data || { value: [], folders: [] };
+            this.loading = false;
+          })
+          .catch(() => {
+            if (this.search.trim() !== q) return;
+            this.searchResults = { value: [], folders: [] };
+            this.loading = false;
+          });
+      }, 300);
+    },
+
     cwd: {
       handler() {
         this.fetchFiles();
