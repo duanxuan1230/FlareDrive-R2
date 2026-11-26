@@ -24,21 +24,18 @@
       <input type="search" v-model="search" aria-label="Search" placeholder="🍿 输入以全局搜索文件" />
       <div class="menu-button">
         <button class="circle" @click="showMenu = true" style="display: flex; align-items: center;background-color: rgb(245, 245, 245);">
+          <svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="margin-right: 6px; flex-shrink: 0;">
+            <path d="M512 512c114.9 0 208-93.1 208-208S626.9 96 512 96 304 189.1 304 304s93.1 208 208 208zm0 64c-138.9 0-416 69.7-416 208v80c0 26.5 21.5 48 48 48h736c26.5 0 48-21.5 48-48v-80c0-138.3-277.1-208-416-208z" fill="#2c2c2c"></path>
+          </svg>
           <p style="
               white-space: nowrap;
-              margin: 0 10px 0 0;
-              font-size: 16px;
+              margin: 0;
+              font-size: 15px;
               font-family: '寒蝉半圆体', -apple-system, BlinkMacSystemFont, 'Segoe UI Adjusted',
     'Segoe UI', 'Liberation Sans', sans-serif;"
-              class="menu-button-text">
-            菜单
+              class="menu-button-text"
+              v-text="currentUser || '用户'">
           </p>
-          <svg t="1741761597964" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
-            p-id="22027" width="24" height="24">
-            <path
-              d="M365 663.5v210.7c0 18.6-23.4 26.8-35 12.3L131.2 637.9c-13.3-16.6-1.5-41.1 19.8-41.1h80.7v-400c0-36.8 29.8-66.7 66.7-66.7 36.8 0 66.7 29.8 66.7 66.7v466.7h-0.1z m200-466.7h266.7c36.8 0 66.7 29.8 66.7 66.7s-29.8 66.7-66.7 66.7H565c-36.8 0-66.7-29.8-66.7-66.7 0-36.8 29.9-66.7 66.7-66.7z m0 266.7h200c36.8 0 66.7 29.8 66.7 66.6s-29.8 66.7-66.6 66.7H565c-36.8 0-66.7-29.8-66.7-66.7 0.1-36.8 29.9-66.6 66.7-66.6z m0 266.7h133.3c36.8 0 66.7 29.8 66.7 66.7 0 36.8-29.8 66.7-66.7 66.7H565c-36.8 0-66.7-29.8-66.7-66.7 0.1-36.9 29.9-66.7 66.7-66.7z"
-              p-id="22028" fill="#2c2c2c"></path>
-          </svg>
         </button>
         <Menu v-model="showMenu"
           :items="menuItems"
@@ -197,6 +194,7 @@ export default {
   data: () => ({
     cwd: new URL(window.location).searchParams.get("p") || "",
     canWrite: false,
+    currentUser: "",
     files: [],
     folders: [],
     clipboard: null,
@@ -214,13 +212,7 @@ export default {
 
   computed: {
     menuItems() {
-      const items = [
-        { text: "按照名称排序A-Z" },
-        { text: "按照大小递增排序" },
-        { text: "按照大小递减排序" },
-      ];
-      if (this.canWrite) items.push({ text: "粘贴文件到网盘" });
-      return items;
+      return [{ text: "切换用户" }];
     },
 
     filteredFiles() {
@@ -297,6 +289,7 @@ export default {
           }
           this.folders = files.folders;
           this.canWrite = Boolean(files.canWrite);
+          this.currentUser = files.currentUser || "";
           this.loading = false;
         });
     },
@@ -323,28 +316,12 @@ export default {
     },
 
     onMenuClick(text) {
-      switch (text) {
-        case "按照名称排序A-Z":
-          this.order = null;
-          break;
-        case "按照大小递增排序":
-          this.order = "大小↑";
-          break;
-        case "按照大小递减排序":
-          this.order = "大小↓";
-          break;
-        case "粘贴文件到网盘":
-          return this.pasteFile();
+      if (text === "切换用户") {
+        const redirect = window.location.pathname + window.location.search;
+        window.location.href = `/api/auth/switch?from=${encodeURIComponent(
+          this.currentUser
+        )}&redirect=${encodeURIComponent(redirect)}`;
       }
-      this.files.sort((a, b) => {
-        if (this.order === "大小↑") {
-          return a.size - b.size;
-        } else if (this.order === "大小↓") {
-          return b.size - a.size;
-        } else {
-          return a.key.localeCompare(b.key);
-        }
-      });
     },
 
     onUploadClicked(fileElement) {

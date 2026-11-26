@@ -30,6 +30,25 @@ function getAllowListForRequest(context, writeOnly = false) {
   return null;
 }
 
+export function get_current_user(context) {
+  const headers = new Headers(context.request.headers);
+  const authorization = headers.get("Authorization");
+  if (authorization && authorization.startsWith("Basic ")) {
+    try {
+      const account = atob(authorization.split("Basic ")[1]);
+      if (account && context.env[account]) {
+        return account.split(":")[0];
+      }
+    } catch {
+      return null;
+    }
+  }
+  if (context.env["GUEST"]) {
+    return "guest";
+  }
+  return null;
+}
+
 export function can_access_path(context, targetPath) {
   if (targetPath.startsWith(THUMBNAIL_PREFIX)) return true;
   const allowList = getAllowListForRequest(context, false);
