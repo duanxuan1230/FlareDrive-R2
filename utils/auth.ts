@@ -41,6 +41,12 @@ export function get_allow_list(context) {
   return getAllowListForRequest(context, false);
 }
 
+export function can_write_path(context, targetPath) {
+  const allowList = getAllowListForRequest(context, true);
+  if (!allowList || allowList.length === 0) return false;
+  return matchesAllowList(targetPath, allowList);
+}
+
 export function get_auth_status(context) {
   const url = context.request.url;
   const dopath = url.includes("/api/write/items/")
@@ -49,7 +55,5 @@ export function get_auth_status(context) {
     ? url.split("/api/write/test/")[1].split("?")[0]
     : null;
   if (dopath === null) return false;
-  const allowList = getAllowListForRequest(context, true);
-  if (!allowList || allowList.length === 0) return false;
-  return matchesAllowList(dopath, allowList);
+  return can_write_path(context, dopath);
 }

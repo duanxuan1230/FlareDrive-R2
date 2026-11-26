@@ -6,8 +6,8 @@
       :style="{ backgroundImage: `url('${backgroundImageUrl}')` }"
   >
     <progress v-if="uploadProgress !== null" :value="uploadProgress" max="100"></progress>
-    <UploadPopup v-model="showUploadPopup" @upload="onUploadClicked" @createFolder="createFolder"></UploadPopup>
-    <button class="upload-button circle" @click="showUploadPopup = true">
+    <UploadPopup v-if="canWrite" v-model="showUploadPopup" @upload="onUploadClicked" @createFolder="createFolder"></UploadPopup>
+    <button v-if="canWrite" class="upload-button circle" @click="showUploadPopup = true">
       <svg t="1741764069699" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
         p-id="24280" width="24" height="24">
         <path
@@ -41,7 +41,7 @@
           </svg>
         </button>
         <Menu v-model="showMenu"
-          :items="[{ text: '按照名称排序A-Z' }, { text: '按照大小递增排序' }, { text: '按照大小递减排序' }, { text: '粘贴文件到网盘' }]"
+          :items="menuItems"
           @click="onMenuClick" />
       </div>
     </div>
@@ -133,19 +133,19 @@
             <span>复制链接</span>
           </button>
         </li>
-        <li>
+        <li v-if="canWrite">
           <button @click="moveFile(focusedItem + '_$folder$')">
             <span>移动</span>
           </button>
         </li>
-        <li>
+        <li v-if="canWrite">
           <button style="color: red" @click="removeFile(focusedItem + '_$folder$')">
             <span>删除</span>
           </button>
         </li>
       </ul>
       <ul v-else class="contextmenu-list">
-        <li>
+        <li v-if="canWrite">
           <button @click="renameFile(focusedItem.key)">
             <span>重命名</span>
           </button>
@@ -155,12 +155,12 @@
             <span>下载</span>
           </a>
         </li>
-        <li>
+        <li v-if="canWrite">
           <button @click="clipboard = focusedItem.key">
             <span>复制</span>
           </button>
         </li>
-        <li>
+        <li v-if="canWrite">
           <button @click="moveFile(focusedItem.key)">
             <span>移动</span>
           </button>
@@ -170,7 +170,7 @@
             <span>复制链接</span>
           </button>
         </li>
-        <li>
+        <li v-if="canWrite">
           <button style="color: red" @click="removeFile(focusedItem.key)">
             <span>删除</span>
           </button>
@@ -198,6 +198,7 @@ import Footer from "./Footer.vue";
 export default {
   data: () => ({
     cwd: new URL(window.location).searchParams.get("p") || "",
+    canWrite: false,
     files: [],
     folders: [],
     clipboard: null,
@@ -214,6 +215,16 @@ export default {
   }),
 
   computed: {
+    menuItems() {
+      const items = [
+        { text: "按照名称排序A-Z" },
+        { text: "按照大小递增排序" },
+        { text: "按照大小递减排序" },
+      ];
+      if (this.canWrite) items.push({ text: "粘贴文件到网盘" });
+      return items;
+    },
+
     filteredFiles() {
       let files = this.files;
       if (this.search) {
@@ -287,6 +298,7 @@ export default {
             });
           }
           this.folders = files.folders;
+          this.canWrite = Boolean(files.canWrite);
           this.loading = false;
         });
     },
@@ -302,6 +314,7 @@ export default {
     },
 
     onDrop(ev) {
+      if (!this.canWrite) return;
       let files;
       if (ev.dataTransfer.items) {
         files = [...ev.dataTransfer.items]

@@ -1,5 +1,5 @@
 import { notFound, parseBucketPath } from "@/utils/bucket";
-import { can_access_path, get_allow_list } from "@/utils/auth";
+import { can_access_path, can_write_path, get_allow_list } from "@/utils/auth";
 
 export async function onRequestGet(context) {
   try {
@@ -45,7 +45,8 @@ export async function onRequestGet(context) {
       }
     }
 
-    return new Response(JSON.stringify({ value: objKeys, folders }), {
+    const canWrite = can_write_path(context, prefix || "");
+    return new Response(JSON.stringify({ value: objKeys, folders, canWrite }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
